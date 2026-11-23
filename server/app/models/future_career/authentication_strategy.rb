@@ -3,7 +3,7 @@
 require 'jwt'
 require 'openssl'
 
-module CareerFit
+module FutureCareer
   # Exchanges a short-lived, server-signed assertion for an existing Customer.
   # Account creation and Magic Link / Google validation belong to Nuxt.
   class AuthenticationStrategy < Spree::Authentication::Strategies::BaseStrategy
@@ -14,7 +14,7 @@ module CareerFit
     CUSTOMER_ID = /\Acust_[A-Za-z0-9]+\z/
 
     def provider
-      'career_fit'
+      'future_career'
     end
 
     def authenticate
@@ -24,8 +24,8 @@ module CareerFit
       claims, header = JWT.decode(
         token, public_key, true,
         algorithms: ['RS256'],
-        iss: ENV.fetch('CAREER_FIT_ASSERTION_ISSUER', 'career-fit-auth'),
-        aud: ENV.fetch('CAREER_FIT_ASSERTION_AUDIENCE', 'spree-career-fit-auth'),
+        iss: ENV.fetch('FUTURE_CAREER_ASSERTION_ISSUER', 'future-career-auth'),
+        aud: ENV.fetch('FUTURE_CAREER_ASSERTION_AUDIENCE', 'spree-future-career-auth'),
         verify_iss: true, verify_aud: true, verify_expiration: true,
         required_claims: REQUIRED_CLAIMS
       )
@@ -37,18 +37,18 @@ module CareerFit
 
       success(customer)
     rescue JWT::DecodeError => error
-      Rails.logger.warn("career_fit.authentication.rejected error=#{error.class.name}")
+      Rails.logger.warn("future_career.authentication.rejected error=#{error.class.name}")
       failure(I18n.t('spree.api.unauthorized'))
     rescue KeyError, OpenSSL::PKey::PKeyError, ArgumentError => error
       # Never log assertion contents, email addresses or key material.
-      Rails.logger.error("career_fit.authentication.configuration_error error=#{error.class.name}")
+      Rails.logger.error("future_career.authentication.configuration_error error=#{error.class.name}")
       failure(I18n.t('spree.api.unauthorized'))
     end
 
     private
 
     def public_key
-      key = OpenSSL::PKey::RSA.new(ENV.fetch('CAREER_FIT_ASSERTION_PUBLIC_KEY').gsub('\\n', "\n"))
+      key = OpenSSL::PKey::RSA.new(ENV.fetch('FUTURE_CAREER_ASSERTION_PUBLIC_KEY').gsub('\\n', "\n"))
       raise ArgumentError, 'A public RSA key of at least 2048 bits is required' if key.private? || key.n.num_bits < 2048
 
       key
@@ -63,7 +63,7 @@ module CareerFit
       customer_id = claims['customer_id']
 
       header['typ'] == 'JWT' &&
-        header['kid'] == ENV.fetch('CAREER_FIT_ASSERTION_KEY_ID', 'career-fit-v1') &&
+        header['kid'] == ENV.fetch('FUTURE_CAREER_ASSERTION_KEY_ID', 'future-career-v1') &&
         claims['purpose'] == 'spree_auth_exchange' &&
         claims['email_verified'] == true &&
         claims['sub'].is_a?(String) && SUBJECT.match?(claims['sub']) &&
@@ -77,7 +77,7 @@ module CareerFit
     end
 
     def reject(reason)
-      Rails.logger.warn("career_fit.authentication.rejected reason=#{reason}")
+      Rails.logger.warn("future_career.authentication.rejected reason=#{reason}")
       failure(I18n.t('spree.api.unauthorized'))
     end
   end

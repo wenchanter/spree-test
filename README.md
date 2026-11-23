@@ -56,16 +56,16 @@ When you deploy, the production image builds your dashboard and serves it at
 To learn how to add pages, tweak tables, or build plugins, see the
 [Admin Dashboard docs](https://spreecommerce.org/docs/developer/dashboard/overview).
 
-## Career Fit authentication
+## Future Career authentication
 
-The `career_fit` Store authentication strategy is implemented in
-`server/app/models/career_fit/authentication_strategy.rb` and registered by
-`server/config/initializers/career_fit_authentication.rb`.
+The `future_career` Store authentication strategy is implemented in
+`server/app/models/future_career/authentication_strategy.rb` and registered by
+`server/config/initializers/future_career_authentication.rb`.
 It verifies a 60-second RS256 assertion from Nuxt, checks the existing Customer ID,
 email and login eligibility, and returns that Customer to Spree's native JWT issuer.
 Customer creation and Magic Link / Google verification stay in Nuxt.
 The initializer also enforces a minimum of 10 characters for new passwords, matching
-Career Fit recovery; a stricter configured minimum is preserved. Existing passwords
+Future Career recovery; a stricter configured minimum is preserved. Existing passwords
 can still be used to sign in. Password-reset emails use the same Gmail sender as Nuxt,
 `harrison.tech.contact@gmail.com`, through `smtp.gmail.com:587` with STARTTLS. The local
 `.env` supplies the Gmail App Password without committing it to this repository. Keep
@@ -94,10 +94,10 @@ storage volumes are retained.
 The matching PUBLIC key is configured in the project-root `.env`:
 
 ```dotenv
-CAREER_FIT_ASSERTION_PUBLIC_KEY="<RSA public PEM; escaped newline characters are supported>"
-CAREER_FIT_ASSERTION_KEY_ID=career-fit-v1
-CAREER_FIT_ASSERTION_ISSUER=career-fit-auth
-CAREER_FIT_ASSERTION_AUDIENCE=spree-career-fit-auth
+FUTURE_CAREER_ASSERTION_PUBLIC_KEY="<RSA public PEM; escaped newline characters are supported>"
+FUTURE_CAREER_ASSERTION_KEY_ID=future-career-v1
+FUTURE_CAREER_ASSERTION_ISSUER=future-career-auth
+FUTURE_CAREER_ASSERTION_AUDIENCE=spree-future-career-auth
 ```
 
 These values correspond to Nuxt's `SPREE_ASSERTION_*` settings. Keep the private
@@ -116,7 +116,7 @@ Logs are available with `npx spree logs`.
 With Spree running, execute isolated authentication tests without touching its database:
 
 ```bash
-node scripts/test-career-fit-auth.cjs
+bun --no-env-file scripts/test-future-career-auth.cjs
 ```
 
 For production, build the existing `server/Dockerfile` through
@@ -124,11 +124,11 @@ For production, build the existing `server/Dockerfile` through
 that image. It includes the strategy and initializer. Configure the matching public
 key on the production service and retain its database and Rails encryption keys.
 The short assertion is not a single-use credential: Nuxt separately enforces
-single-use Magic Links. No refresh-token flow is added to Career Fit.
+single-use Magic Links. No refresh-token flow is added to Future Career.
 
 ## Customizing the Spree API
 
-The `server/` directory is the Spree API — a full Rails application serving the Store and Admin APIs (plus background jobs and transactional emails) that your storefront and dashboard talk to. This project uses a prebuilt Docker image with the two Career Fit authentication mounts described above. Other local server changes require a source build. Switching through eject uses a fresh development database, so preserve any existing data before choosing this workflow:
+The `server/` directory is the Spree API — a full Rails application serving the Store and Admin APIs (plus background jobs and transactional emails) that your storefront and dashboard talk to. This project uses a prebuilt Docker image with the two Future Career authentication mounts described above. Other local server changes require a source build. Switching through eject uses a fresh development database, so preserve any existing data before choosing this workflow:
 
 ```bash
 npx spree eject
