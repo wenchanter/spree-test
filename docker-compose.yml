@@ -94,8 +94,10 @@ services:
       - "${SPREE_PORT:-3000}:3000"
     volumes:
       - storage_data:/rails/storage
-      # Future Career's two-file auth extension; keep the existing image and database.
+      # Future Career auth/account extensions; keep the existing image and database.
       - ./server/app/models/future_career:/rails/app/models/future_career:ro
+      - ./server/app/serializers/future_career:/rails/app/serializers/future_career:ro
+      - ./server/app/controllers/concerns/future_career:/rails/app/controllers/concerns/future_career:ro
       - ./server/config/initializers/future_career_authentication.rb:/rails/config/initializers/future_career_authentication.rb:ro
     healthcheck:
       test: curl -f http://localhost:3000/up || exit 1

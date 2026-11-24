@@ -86,8 +86,8 @@ The existing `npm run dev` shortcut also works. The local API is at
 `http://localhost:5173` with the current local port settings.
 The installed CLI does not support `spree dev --no-open`.
 
-`docker-compose.yml` mounts only the strategy directory and its initializer
-read-only into the existing official image. No eject, database switch or new
+`docker-compose.yml` mounts the strategy, account serializer, account controller
+concern and initializer read-only into the existing official image. No eject, database switch or new
 authentication table is needed for this extension. The existing database and
 storage volumes are retained.
 
@@ -117,18 +117,50 @@ With Spree running, execute isolated authentication tests without touching its d
 
 ```bash
 bun --no-env-file scripts/test-future-career-auth.cjs
+bun --no-env-file scripts/test-future-career-password.cjs
 ```
+
+The password tests boot the installed Rails/Spree classes but substitute locked
+in-memory customer records; they never create or change database accounts. They
+exercise first-password creation, existing-password and lockout checks, required
+confirmation, configured password length, concurrent first-password requests and
+the real serializer's account fields. They do not replace a full HTTP/database test.
+
+### Account password extension
+
+`GET /api/v3/store/customers/me` includes `has_password`, calculated from the
+Customer's real `password_digest`. The digest is never exposed. Password resets
+are automatically reflected on the next account read; there is no extra status column.
+
+`PATCH /api/v3/store/customers/me` accepts the existing top-level password fields.
+For a signed-in customer without a password, a request containing only `password`,
+`password_confirmation` and optional `current_password` may set the first password
+without supplying an old password. A locked customer cannot use this exception.
+The new password must have at least 10 characters and matching confirmation;
+stricter configured/model validations remain in effect. Requests that also change
+email/profile data use the original Spree current-password check.
+
+Existing passwords still require a valid `current_password`. Password updates lock
+and reload the Customer until the update completes, so concurrent first-password
+requests cannot silently overwrite the first successful password. The shared
+password-confirmation concern and account-erasure checks are unchanged.
+
+Implementation files are `server/app/serializers/future_career/customer_serializer.rb`
+and `server/app/controllers/concerns/future_career/customer_password_update.rb`;
+the existing initializer registers both through a reload-safe prepare callback.
+After adding their mounts, recreate the Spree service through `spree dev` (a simple
+restart does not apply new mounts). No migration or database reset is required.
 
 For production, build the existing `server/Dockerfile` through
 `npx spree build --production --tag <your-registry>/my-store:<version>` and deploy
-that image. It includes the strategy and initializer. Configure the matching public
+that image. It includes the strategy, account extensions and initializer. Configure the matching public
 key on the production service and retain its database and Rails encryption keys.
 The short assertion is not a single-use credential: Nuxt separately enforces
 single-use Magic Links. No refresh-token flow is added to Future Career.
 
 ## Customizing the Spree API
 
-The `server/` directory is the Spree API — a full Rails application serving the Store and Admin APIs (plus background jobs and transactional emails) that your storefront and dashboard talk to. This project uses a prebuilt Docker image with the two Future Career authentication mounts described above. Other local server changes require a source build. Switching through eject uses a fresh development database, so preserve any existing data before choosing this workflow:
+The `server/` directory is the Spree API — a full Rails application serving the Store and Admin APIs (plus background jobs and transactional emails) that your storefront and dashboard talk to. This project uses a prebuilt Docker image with the Future Career extension mounts described above. Other local server changes require a source build. Switching through eject uses a fresh development database, so preserve any existing data before choosing this workflow:
 
 ```bash
 npx spree eject
